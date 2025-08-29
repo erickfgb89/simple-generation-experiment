@@ -3,66 +3,324 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>OpenSearch JSON Complexity Analyzer</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <title>OpenSearch Complexity Analyzer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        .header h1 {
+            color: white;
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .header p {
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.2rem;
+            font-weight: 300;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 2fr;
+            gap: 2rem;
+            align-items: start;
+        }
+
+        .input-section {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .input-section h2 {
+            color: #4f46e5;
+            font-size: 1.5rem;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+            color: #374151;
+        }
+
+        textarea {
+            width: 100%;
+            min-height: 300px;
+            padding: 1rem;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            resize: vertical;
+            transition: border-color 0.2s ease;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #4f46e5;
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .analyze-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+        }
+
+        .analyze-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(79, 70, 229, 0.3);
+        }
+
+        .analyze-btn:active {
+            transform: translateY(0);
+        }
+
+        .results-section {
+            background: white;
+            border-radius: 16px;
+            padding: 2rem;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .results-section h2 {
+            color: #4f46e5;
+            font-size: 1.5rem;
+            margin-bottom: 2rem;
+            font-weight: 600;
+        }
+
+        .scores-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.5rem;
+            margin-bottom: 2rem;
+        }
+
+        .score-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-radius: 12px;
+            padding: 1.5rem;
+            text-align: center;
+            border: 1px solid #e2e8f0;
+        }
+
+        .score-value {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+
+        .score-label {
+            color: #64748b;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            font-size: 0.9rem;
+        }
+
+        .analysis-details {
+            margin-top: 2rem;
+        }
+
+        .detail-section {
+            margin-bottom: 2rem;
+            padding: 1.5rem;
+            background: #f8fafc;
+            border-radius: 12px;
+            border-left: 4px solid #4f46e5;
+        }
+
+        .detail-section h3 {
+            color: #1e293b;
+            margin-bottom: 1rem;
+            font-weight: 600;
+        }
+
+        .chart-container {
+            margin: 1.5rem 0;
+            height: 300px;
+        }
+
+        .field-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .field-table th,
+        .field-table td {
+            text-align: left;
+            padding: 0.75rem;
+            border-bottom: 1px solid #e2e8f0;
+        }
+
+        .field-table th {
+            background: #f1f5f9;
+            font-weight: 600;
+            color: #475569;
+        }
+
+        .complexity-bar {
+            height: 8px;
+            border-radius: 4px;
+            background: #e2e8f0;
+            overflow: hidden;
+        }
+
+        .complexity-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+
+        .complexity-low { background: #22c55e; }
+        .complexity-medium { background: #f59e0b; }
+        .complexity-high { background: #ef4444; }
+
+        .hidden {
+            display: none;
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+            
+            .header h1 {
+                font-size: 2.5rem;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
-        <header>
-            <h1>OpenSearch JSON Complexity Analyzer</h1>
-            <p>Analyze JSON documents to estimate OpenSearch indexing complexity and size</p>
+        <header class="header">
+            <h1>OpenSearch Complexity Analyzer</h1>
+            <p>Analyze JSON documents against OpenSearch's indexing algorithm</p>
         </header>
 
-        <main>
+        <main class="main-content">
             <section class="input-section">
-                <h2>JSON Document Input</h2>
-                <textarea id="jsonInput" placeholder="Paste your JSON document here..."></textarea>
-                <button id="analyzeBtn">Analyze Complexity</button>
+                <h2>📄 Document Input</h2>
+                <div class="form-group">
+                    <label for="jsonInput">Paste your JSON document below:</label>
+                    <textarea 
+                        id="jsonInput" 
+                        placeholder='{ 
+  "title": "Sample Document",
+  "description": "A sample document to analyze",
+  "tags": ["opensearch", "analysis", "demo"],
+  "metadata": {
+    "author": "John Doe",
+    "created": "2024-01-01T00:00:00Z"
+  }
+}'></textarea>
+                </div>
+                <button id="analyzeBtn" class="analyze-btn">🔍 Analyze Document</button>
             </section>
 
-            <section class="results-section" id="results" style="display: none;">
-                <div class="results-grid">
-                    <div class="metric-card">
-                        <h3>Complexity Score</h3>
-                        <div class="metric-value" id="complexityScore">0</div>
-                        <div class="metric-unit">out of 100</div>
+            <section class="results-section">
+                <h2>📊 Analysis Results</h2>
+                <div id="resultsContent" class="hidden">
+                    <div class="scores-grid">
+                        <div class="score-card">
+                            <div id="indexSizeScore" class="score-value">--</div>
+                            <div class="score-label">Index Size Score</div>
+                        </div>
+                        <div class="score-card">
+                            <div id="complexityScore" class="score-value">--</div>
+                            <div class="score-label">Complexity Score</div>
+                        </div>
                     </div>
-                    
-                    <div class="metric-card">
-                        <h3>Estimated Index Size</h3>
-                        <div class="metric-value" id="indexSize">0 KB</div>
-                        <div class="metric-unit">approximate</div>
-                    </div>
-                    
-                    <div class="metric-card">
-                        <h3>Field Count</h3>
-                        <div class="metric-value" id="fieldCount">0</div>
-                        <div class="metric-unit">fields</div>
-                    </div>
-                    
-                    <div class="metric-card">
-                        <h3>Max Depth</h3>
-                        <div class="metric-value" id="maxDepth">0</div>
-                        <div class="metric-unit">levels</div>
+
+                    <div class="analysis-details">
+                        <div class="detail-section">
+                            <h3>📈 Field Type Distribution</h3>
+                            <div class="chart-container">
+                                <canvas id="fieldTypeChart"></canvas>
+                            </div>
+                        </div>
+
+                        <div class="detail-section">
+                            <h3>🔍 Field Analysis</h3>
+                            <table class="field-table" id="fieldTable">
+                                <thead>
+                                    <tr>
+                                        <th>Field Path</th>
+                                        <th>Type</th>
+                                        <th>Complexity</th>
+                                        <th>Storage Impact</th>
+                                    </tr>
+                                </thead>
+                                <tbody></tbody>
+                            </table>
+                        </div>
+
+                        <div class="detail-section">
+                            <h3>⚡ Complexity Breakdown</h3>
+                            <div class="chart-container">
+                                <canvas id="complexityChart"></canvas>
+                            </div>
+                        </div>
                     </div>
                 </div>
-
-                <div class="visualization-section">
-                    <h3>Complexity Breakdown</h3>
-                    <div class="chart-container">
-                        <canvas id="complexityChart"></canvas>
-                    </div>
-                </div>
-
-                <div class="details-section">
-                    <h3>Analysis Details</h3>
-                    <div id="analysisDetails"></div>
+                
+                <div id="placeholderContent">
+                    <p style="text-align: center; color: #64748b; margin-top: 4rem;">
+                        Enter a JSON document above and click "Analyze Document" to see the results.
+                    </p>
                 </div>
             </section>
         </main>
     </div>
 
-    <script src="app.js"></script>
+    <script type="module" src="/src/main.ts"></script>
 </body>
 </html>
