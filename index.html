@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenSearch JSON Complexity Analyzer</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>OpenSearch JSON Complexity Analyzer</h1>
+            <p>Analyze JSON documents to estimate OpenSearch indexing complexity and size</p>
+        </header>
+
+        <main>
+            <section class="input-section">
+                <h2>JSON Document Input</h2>
+                <textarea id="jsonInput" placeholder="Paste your JSON document here..."></textarea>
+                <button id="analyzeBtn">Analyze Complexity</button>
+            </section>
+
+            <section class="results-section" id="results" style="display: none;">
+                <div class="results-grid">
+                    <div class="metric-card">
+                        <h3>Complexity Score</h3>
+                        <div class="metric-value" id="complexityScore">0</div>
+                        <div class="metric-unit">out of 100</div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <h3>Estimated Index Size</h3>
+                        <div class="metric-value" id="indexSize">0 KB</div>
+                        <div class="metric-unit">approximate</div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <h3>Field Count</h3>
+                        <div class="metric-value" id="fieldCount">0</div>
+                        <div class="metric-unit">fields</div>
+                    </div>
+                    
+                    <div class="metric-card">
+                        <h3>Max Depth</h3>
+                        <div class="metric-value" id="maxDepth">0</div>
+                        <div class="metric-unit">levels</div>
+                    </div>
+                </div>
+
+                <div class="visualization-section">
+                    <h3>Complexity Breakdown</h3>
+                    <div class="chart-container">
+                        <canvas id="complexityChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="details-section">
+                    <h3>Analysis Details</h3>
+                    <div id="analysisDetails"></div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
