@@ -1,16 +1,17 @@
 import type { AnalysisResult } from '../types';
+import { FieldTypeChart, FieldComplexityList, MetricsGrid } from './charts/SimpleCharts';
 
 interface AnalysisResultsProps {
   analysis: AnalysisResult;
 }
 
-function ScoreCard({ title, score, max = 10, description, color, explanation }: {
+function EnhancedScoreCard({ title, score, max = 10, description, color, explanation }: {
   title: string;
   score: number;
   max?: number;
   description: string;
   color: 'green' | 'yellow' | 'red';
-  explanation?: string;
+  explanation: string;
 }) {
   const percentage = (score / max) * 100;
   
@@ -39,14 +40,59 @@ function ScoreCard({ title, score, max = 10, description, color, explanation }: 
         ></div>
       </div>
       <p className="text-sm opacity-80 mb-2">{description}</p>
-      {explanation && (
-        <details className="text-xs opacity-70">
-          <summary className="cursor-pointer hover:opacity-90">How is this calculated?</summary>
-          <div className="mt-2 pl-2 border-l-2 border-current border-opacity-30">
-            {explanation}
+      <details className="text-xs opacity-70">
+        <summary className="cursor-pointer hover:opacity-90">How is this calculated?</summary>
+        <div className="mt-2 pl-2 border-l-2 border-current border-opacity-30">
+          {explanation}
+        </div>
+      </details>
+    </div>
+  );
+}
+
+function FieldTypeExplanation({ fieldTypes }: { fieldTypes: Record<string, number> }) {
+  const activeTypes = Object.entries(fieldTypes).filter(([_, count]) => count > 0);
+  
+  const typeExplanations = {
+    'text': 'Analyzed for full-text search. Requires tokenization, lowercasing, and stemming. High processing overhead.',
+    'keyword': 'Stored as exact values. No analysis required. Fastest for exact matches and aggregations.',
+    'long': '64-bit integers. Space-optimized storage. Fast for numeric operations.',
+    'integer': '32-bit integers. More space-efficient than long for smaller values.',
+    'short': '16-bit integers. Very space-efficient for small numeric ranges.',
+    'byte': '8-bit integers. Most space-efficient for very small numbers.',
+    'double': '64-bit floating point. Higher precision but larger storage.',
+    'float': '32-bit floating point. Good balance of precision and storage.',
+    'date': 'Stored as milliseconds since epoch. Optimized for temporal queries.',
+    'boolean': 'Single bit storage. Most space-efficient field type.',
+    'object': 'Flattened structure. Field names concatenated with dots.',
+    'nested': 'Separate Lucene documents. Maintains object relationships but high overhead.'
+  };
+
+  return (
+    <div className="space-y-3">
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900">Field Type Analysis</h3>
+        <a 
+          href="https://opensearch.org/docs/latest/field-types/supported-field-types/"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-blue-600 hover:text-blue-700 text-sm"
+        >
+          View Documentation ↗
+        </a>
+      </div>
+      
+      <div className="space-y-2">
+        {activeTypes.map(([type, count]) => (
+          <div key={type} className="bg-gray-50 border rounded-lg p-3">
+            <div className="flex items-center justify-between mb-1">
+              <span className="font-medium capitalize text-gray-900">{type}</span>
+              <span className="text-gray-600 font-mono text-sm">{count} fields</span>
+            </div>
+            <p className="text-gray-700 text-sm">{typeExplanations[type as keyof typeof typeExplanations]}</p>
           </div>
-        </details>
-      )}
+        ))}
+      </div>
     </div>
   );
 }
@@ -99,53 +145,6 @@ function DocumentationLinks() {
   );
 }
 
-function FieldTypeExplanation({ fieldTypes }: { fieldTypes: Record<string, number> }) {
-  const activeTypes = Object.entries(fieldTypes).filter(([_, count]) => count > 0);
-  
-  const typeExplanations = {
-    'text': 'Analyzed for full-text search. Requires tokenization, lowercasing, and stemming. High processing overhead.',
-    'keyword': 'Stored as exact values. No analysis required. Fastest for exact matches and aggregations.',
-    'long': '64-bit integers. Space-optimized storage. Fast for numeric operations.',
-    'integer': '32-bit integers. More space-efficient than long for smaller values.',
-    'short': '16-bit integers. Very space-efficient for small numeric ranges.',
-    'byte': '8-bit integers. Most space-efficient for very small numbers.',
-    'double': '64-bit floating point. Higher precision but larger storage.',
-    'float': '32-bit floating point. Good balance of precision and storage.',
-    'date': 'Stored as milliseconds since epoch. Optimized for temporal queries.',
-    'boolean': 'Single bit storage. Most space-efficient field type.',
-    'object': 'Flattened structure. Field names concatenated with dots.',
-    'nested': 'Separate Lucene documents. Maintains object relationships but high overhead.'
-  };
-
-  return (
-    <div className="space-y-3">
-      <div className="flex items-center justify-between">
-        <h3 className="text-lg font-semibold text-gray-900">Field Type Analysis</h3>
-        <a 
-          href="https://opensearch.org/docs/latest/field-types/supported-field-types/"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="text-blue-600 hover:text-blue-700 text-sm"
-        >
-          View Documentation ↗
-        </a>
-      </div>
-      
-      <div className="space-y-2">
-        {activeTypes.map(([type, count]) => (
-          <div key={type} className="bg-gray-50 border rounded-lg p-3">
-            <div className="flex items-center justify-between mb-1">
-              <span className="font-medium capitalize text-gray-900">{type}</span>
-              <span className="text-gray-600 font-mono text-sm">{count} fields</span>
-            </div>
-            <p className="text-gray-700 text-sm">{typeExplanations[type as keyof typeof typeExplanations]}</p>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
 export function AnalysisResults({ analysis }: AnalysisResultsProps) {
   const getScoreColor = (score: number): 'green' | 'yellow' | 'red' => {
     if (score <= 3) return 'green';
@@ -166,16 +165,16 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
         </p>
       </div>
       
-      {/* Score Cards */}
+      {/* Enhanced Score Cards with Explanations */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <ScoreCard
+        <EnhancedScoreCard
           title="Index Size Score"
           score={analysis.indexSizeScore}
           description="Predicted storage requirements based on field types and structure"
           color={getScoreColor(analysis.indexSizeScore)}
           explanation={indexSizeExplanation}
         />
-        <ScoreCard
+        <EnhancedScoreCard
           title="Complexity Score"
           score={analysis.complexityScore}
           description="Processing overhead for indexing operations"
@@ -185,40 +184,15 @@ export function AnalysisResults({ analysis }: AnalysisResultsProps) {
       </div>
 
       {/* Key Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-        <div className="text-center p-3 bg-gray-50 rounded-lg">
-          <div className="text-2xl font-bold text-gray-900">{analysis.fieldCount}</div>
-          <div className="text-sm text-gray-600">Total Fields</div>
-          <div className="text-xs text-gray-500 mt-1">
-            Limit: 1,000 recommended
-          </div>
-        </div>
-        <div className="text-center p-3 bg-gray-50 rounded-lg">
-          <div className="text-2xl font-bold text-gray-900">{analysis.maxDepth}</div>
-          <div className="text-sm text-gray-600">Max Depth</div>
-          <div className="text-xs text-gray-500 mt-1">
-            Limit: 5 levels optimal
-          </div>
-        </div>
-        <div className="text-center p-3 bg-gray-50 rounded-lg">
-          <div className="text-2xl font-bold text-gray-900">{analysis.estimatedStorageMB}</div>
-          <div className="text-sm text-gray-600">Est. Storage (MB)</div>
-          <div className="text-xs text-gray-500 mt-1">
-            Includes replication overhead
-          </div>
-        </div>
-        <div className="text-center p-3 bg-gray-50 rounded-lg">
-          <div className="text-2xl font-bold text-gray-900">
-            {Object.values(analysis.fieldTypes).filter(count => count > 0).length}
-          </div>
-          <div className="text-sm text-gray-600">Field Types</div>
-          <div className="text-xs text-gray-500 mt-1">
-            Variety impacts complexity
-          </div>
-        </div>
+      <MetricsGrid analysis={analysis} />
+
+      {/* Field Type Distribution and Complexity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <FieldTypeChart analysis={analysis} />
+        <FieldComplexityList analysis={analysis} fields={analysis.fields} />
       </div>
 
-      {/* Field Types Breakdown */}
+      {/* Enhanced Field Types with Explanations */}
       <FieldTypeExplanation fieldTypes={analysis.fieldTypes} />
 
       {/* Warnings */}

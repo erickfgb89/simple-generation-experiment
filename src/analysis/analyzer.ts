@@ -1,4 +1,5 @@
 import type { AnalysisResult, OpenSearchFieldType, FieldAnalysis } from '../types';
+import { calculateEnhancedScores, SCORING_CONFIGS } from './scoring';
 
 /**
  * OpenSearch Document Complexity Analyzer
@@ -258,8 +259,9 @@ function calculateStorageRequirements(fields: FieldAnalysis[], sourceDataSize: n
 
 /**
  * Main document analysis function implementing OpenSearch-based complexity assessment
+ * with enhanced scoring system
  */
-export function analyzeDocument(document: any): AnalysisResult {
+export function analyzeDocument(document: any, useCase: 'general' | 'analytics' | 'logging' | 'ecommerce' | 'monitoring' = 'general'): AnalysisResult {
   const fields = analyzeDocumentStructure(document);
   const sourceDataSize = new Blob([JSON.stringify(document)]).size;
   
@@ -281,12 +283,14 @@ export function analyzeDocument(document: any): AnalysisResult {
   // Storage calculation
   const storage = calculateStorageRequirements(fields, sourceDataSize);
   
-  // Complexity scoring (0-10 scale)
+  // Legacy scores (maintained for backward compatibility)
   const avgComplexity = fields.reduce((sum, f) => sum + f.complexity, 0) / Math.max(fields.length, 1);
   const complexityScore = Math.min(avgComplexity, 10);
-  
-  // Index size scoring (0-10 scale) based on storage overhead
   const indexSizeScore = Math.min(storage.overheadPercentage / 50, 10); // 500% overhead = score of 10
+  
+  // Enhanced scoring system
+  const scoringConfig = SCORING_CONFIGS[useCase];
+  const enhancedResults = calculateEnhancedScores(fields, storage.estimatedStorageMB, scoringConfig);
   
   // Generate warnings based on OpenSearch limits and best practices
   const warnings: string[] = [];
@@ -304,6 +308,20 @@ export function analyzeDocument(document: any): AnalysisResult {
   }
   if (storage.overheadPercentage > 200) {
     warnings.push(`High storage overhead (${storage.overheadPercentage.toFixed(1)}%). Consider field type optimization.`);
+  }
+  
+  // Add enhanced scoring warnings
+  if (enhancedResults.scores.queryPerformance < 4) {
+    warnings.push(`Poor query performance predicted (${enhancedResults.scores.queryPerformance}/10). Consider optimizing field types and structure.`);
+  }
+  if (enhancedResults.scores.indexingPerformance < 4) {
+    warnings.push(`Slow indexing performance predicted (${enhancedResults.scores.indexingPerformance}/10). Reduce text analysis overhead.`);
+  }
+  if (enhancedResults.scores.storageEfficiency < 4) {
+    warnings.push(`Inefficient storage utilization (${enhancedResults.scores.storageEfficiency}/10). Consider field type optimization.`);
+  }
+  if (enhancedResults.scores.maintenanceCost > 7) {
+    warnings.push(`High maintenance overhead predicted (${enhancedResults.scores.maintenanceCost}/10). Complex structures require specialized expertise.`);
   }
   
   // Generate optimization recommendations
@@ -324,14 +342,33 @@ export function analyzeDocument(document: any): AnalysisResult {
     optimizations.push('Consider using nested type for complex object arrays to maintain relationships.');
   }
   
+  // Add recommendations from enhanced scoring
+  Object.values(enhancedResults.explanations).forEach(explanation => {
+    optimizations.push(...explanation.recommendations);
+  });
+  
+  // Remove duplicate recommendations
+  const uniqueOptimizations = [...new Set(optimizations)];
+  
   return {
+    // Legacy scores (backward compatibility)
     indexSizeScore: Math.round(indexSizeScore * 10) / 10,
     complexityScore: Math.round(complexityScore * 10) / 10,
+    
+    // Enhanced scoring dimensions
+    scores: enhancedResults.scores,
+    explanations: enhancedResults.explanations,
+    performanceMetrics: enhancedResults.performanceMetrics,
+    comparative: enhancedResults.comparative,
+    scoringConfig: enhancedResults.scoringConfig,
+    
+    // Existing analysis data
     fieldCount: fields.length,
     estimatedStorageMB: Math.round(storage.estimatedStorageMB * 100) / 100,
     fieldTypes,
     maxDepth,
+    fields,
     warnings,
-    optimizations
+    optimizations: uniqueOptimizations
   };
 }
