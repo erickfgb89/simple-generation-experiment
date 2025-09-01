@@ -1,5 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
 import { ChevronDownIcon, DocumentArrowUpIcon, LinkIcon, SparklesIcon, DocumentDuplicateIcon, ExclamationTriangleIcon, CheckCircleIcon, XMarkIcon, EyeIcon } from '@heroicons/react/24/outline';
+import { useToast, toast } from './Toast';
 
 interface JsonInputProps {
   value: string;
@@ -515,6 +516,7 @@ const exampleDocuments = {
 };
 
 export function JsonInput({ value, onChange, onAnalyze, onReset, isAnalyzing, error }: JsonInputProps) {
+  const { addToast } = useToast();
   const [showExamples, setShowExamples] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const [urlInput, setUrlInput] = useState('');
@@ -589,6 +591,7 @@ export function JsonInput({ value, onChange, onAnalyze, onReset, isAnalyzing, er
       const parsed = JSON.parse(value);
       const formatted = JSON.stringify(parsed, null, 2);
       onChange(formatted);
+      addToast(toast.success('JSON Formatted', 'Your JSON has been prettified and formatted'));
     } catch (err) {
       // If JSON is invalid, try to fix common issues
       let fixed = value
@@ -602,7 +605,10 @@ export function JsonInput({ value, onChange, onAnalyze, onReset, isAnalyzing, er
         onChange(formatted);
       } catch (fixErr) {
         // If auto-fix fails, just notify the user
-        alert('Unable to format JSON. Please fix syntax errors first.');
+        addToast(toast.warning(
+          'Format Failed', 
+          'Unable to format JSON. Please fix syntax errors first.'
+        ));
       }
     }
   };
@@ -610,15 +616,16 @@ export function JsonInput({ value, onChange, onAnalyze, onReset, isAnalyzing, er
   // Handle file upload
   const handleFileUpload = async (file: File) => {
     if (!file.name.endsWith('.json')) {
-      alert('Please select a JSON file (.json)');
+      addToast(toast.warning('Invalid File Type', 'Please select a JSON file (.json)'));
       return;
     }
 
     try {
       const text = await file.text();
       onChange(text);
+      addToast(toast.success('File Loaded', `Successfully loaded ${file.name}`));
     } catch (err) {
-      alert('Error reading file: ' + (err instanceof Error ? err.message : 'Unknown error'));
+      addToast(toast.error('File Error', 'Error reading file: ' + (err instanceof Error ? err.message : 'Unknown error')));
     }
   };
 
@@ -666,8 +673,12 @@ export function JsonInput({ value, onChange, onAnalyze, onReset, isAnalyzing, er
       onChange(text);
       setUrlInput('');
     } catch (err) {
-      alert('Error loading from URL: ' + (err instanceof Error ? err.message : 'Unknown error') + 
-            '\n\nNote: Due to CORS restrictions, only URLs that allow cross-origin requests will work.');
+      addToast(toast.error(
+        'URL Load Error', 
+        'Error loading from URL: ' + (err instanceof Error ? err.message : 'Unknown error') + 
+            ' Note: Due to CORS restrictions, only URLs that allow cross-origin requests will work.',
+        { duration: 8000 }
+      ));
     } finally {
       setIsLoadingUrl(false);
     }
@@ -683,18 +694,18 @@ export function JsonInput({ value, onChange, onAnalyze, onReset, isAnalyzing, er
   };
 
   return (
-    <div className="bg-white rounded-lg shadow-sm border p-6">
-      <h2 className="text-xl font-semibold text-gray-900 mb-4">JSON Document Input</h2>
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-6 transition-colors duration-200">
+      <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">JSON Document Input</h2>
       
       <div className="space-y-4">
         {/* File Upload and URL Input */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           {/* File Upload */}
           <div 
             className={`relative border-2 border-dashed rounded-lg p-4 text-center transition-colors ${
               isDragOver 
-                ? 'border-blue-500 bg-blue-50' 
-                : 'border-gray-300 hover:border-gray-400'
+                ? 'border-blue-500 bg-blue-50 dark:bg-blue-900/20' 
+                : 'border-gray-300 dark:border-gray-600 hover:border-gray-400 dark:hover:border-gray-500'
             }`}
             onDragOver={handleDragOver}
             onDragLeave={handleDragLeave}
@@ -707,12 +718,12 @@ export function JsonInput({ value, onChange, onAnalyze, onReset, isAnalyzing, er
               onChange={(e) => e.target.files?.[0] && handleFileUpload(e.target.files[0])}
               className="hidden"
             />
-            <DocumentArrowUpIcon className="mx-auto h-8 w-8 text-gray-400 mb-2" />
-            <p className="text-sm text-gray-600 mb-2">
+            <DocumentArrowUpIcon className="mx-auto h-8 w-8 text-gray-400 dark:text-gray-500 mb-2" />
+            <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
               Drop JSON file here or{' '}
               <button
                 onClick={() => fileInputRef.current?.click()}
-                className="text-blue-600 hover:text-blue-700 font-medium"
+                className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 font-medium"
               >
                 browse
               </button>
@@ -721,7 +732,7 @@ export function JsonInput({ value, onChange, onAnalyze, onReset, isAnalyzing, er
 
           {/* URL Input */}
           <div className="space-y-2">
-            <label className="block text-sm font-medium text-gray-700">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               Load from URL:
             </label>
             <div className="flex space-x-2">
@@ -730,12 +741,12 @@ export function JsonInput({ value, onChange, onAnalyze, onReset, isAnalyzing, er
                 value={urlInput}
                 onChange={(e) => setUrlInput(e.target.value)}
                 placeholder="https://api.example.com/data.json"
-                className="flex-1 px-3 py-2 border border-gray-300 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="flex-1 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
               />
               <button
                 onClick={loadFromUrl}
                 disabled={!urlInput.trim() || isLoadingUrl}
-                className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 flex items-center space-x-1"
+                className="px-3 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 flex items-center space-x-1 transition-colors"
               >
                 {isLoadingUrl ? (
                   <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white" />
@@ -750,18 +761,18 @@ export function JsonInput({ value, onChange, onAnalyze, onReset, isAnalyzing, er
         {/* JSON Editor */}
         <div className="relative">
           <div className="flex justify-between items-center mb-2">
-            <label htmlFor="json-input" className="block text-sm font-medium text-gray-700">
+            <label htmlFor="json-input" className="block text-sm font-medium text-gray-700 dark:text-gray-300">
               JSON Document:
             </label>
             <div className="flex items-center space-x-2">
               {isValidJson && (
-                <div className="flex items-center text-green-600 text-sm">
+                <div className="flex items-center text-green-600 dark:text-green-400 text-sm">
                   <CheckCircleIcon className="h-4 w-4 mr-1" />
                   Valid JSON
                 </div>
               )}
               {validationErrors.length > 0 && (
-                <div className="flex items-center text-red-600 text-sm">
+                <div className="flex items-center text-red-600 dark:text-red-400 text-sm">
                   <ExclamationTriangleIcon className="h-4 w-4 mr-1" />
                   {validationErrors.length} error{validationErrors.length !== 1 ? 's' : ''}
                 </div>
@@ -775,12 +786,12 @@ export function JsonInput({ value, onChange, onAnalyze, onReset, isAnalyzing, er
               id="json-input"
               value={value}
               onChange={(e) => onChange(e.target.value)}
-              className={`w-full h-64 p-3 border rounded-md font-mono text-sm focus:ring-2 focus:ring-blue-500 resize-vertical ${
+              className={`w-full h-48 sm:h-64 lg:h-72 p-3 border rounded-md font-mono text-sm focus:ring-2 focus:ring-blue-500 resize-vertical bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 ${
                 validationErrors.length > 0 
-                  ? 'border-red-300 focus:border-red-500' 
+                  ? 'border-red-300 dark:border-red-600 focus:border-red-500 dark:focus:border-red-400' 
                   : isValidJson && value.trim()
-                  ? 'border-green-300 focus:border-green-500'
-                  : 'border-gray-300 focus:border-blue-500'
+                  ? 'border-green-300 dark:border-green-600 focus:border-green-500 dark:focus:border-green-400'
+                  : 'border-gray-300 dark:border-gray-600 focus:border-blue-500 dark:focus:border-blue-400'
               }`}
               placeholder="Enter JSON document to analyze..."
               spellCheck={false}
@@ -792,15 +803,15 @@ export function JsonInput({ value, onChange, onAnalyze, onReset, isAnalyzing, er
         {validationErrors.length > 0 && (
           <div className="space-y-2">
             {validationErrors.map((err, index) => (
-              <div key={index} className="p-3 bg-red-50 border border-red-200 rounded-md">
+              <div key={index} className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
                 <div className="flex items-start space-x-2">
                   <ExclamationTriangleIcon className="h-5 w-5 text-red-500 mt-0.5 flex-shrink-0" />
                   <div className="flex-1">
-                    <p className="text-red-700 text-sm font-medium">
+                    <p className="text-red-700 dark:text-red-300 text-sm font-medium">
                       {err.line && err.column ? `Line ${err.line}, Column ${err.column}: ` : ''}{err.message}
                     </p>
                     {err.suggestion && (
-                      <p className="text-red-600 text-xs mt-1">
+                      <p className="text-red-600 dark:text-red-400 text-xs mt-1">
                         Suggestion: {err.suggestion}
                       </p>
                     )}
@@ -813,17 +824,17 @@ export function JsonInput({ value, onChange, onAnalyze, onReset, isAnalyzing, er
 
         {/* Main Error (from parent component) */}
         {error && (
-          <div className="p-3 bg-red-50 border border-red-200 rounded-md">
-            <p className="text-red-700 text-sm">{error}</p>
+          <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md">
+            <p className="text-red-700 dark:text-red-300 text-sm">{error}</p>
           </div>
         )}
 
         {/* Action buttons */}
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-2 sm:gap-3">
           <button
             onClick={onAnalyze}
             disabled={isAnalyzing || !value.trim() || validationErrors.length > 0}
-            className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
+            className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 transition-colors"
           >
             {isAnalyzing ? (
               <>
@@ -838,7 +849,7 @@ export function JsonInput({ value, onChange, onAnalyze, onReset, isAnalyzing, er
           <button
             onClick={formatJson}
             disabled={!value.trim()}
-            className="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 disabled:opacity-50 flex items-center space-x-2"
+            className="px-4 py-2 bg-green-600 dark:bg-green-700 text-white rounded-md hover:bg-green-700 dark:hover:bg-green-600 disabled:opacity-50 flex items-center space-x-2 transition-colors"
           >
             <SparklesIcon className="h-4 w-4" />
             <span>Format & Prettify</span>
@@ -847,7 +858,7 @@ export function JsonInput({ value, onChange, onAnalyze, onReset, isAnalyzing, er
           <div className="relative">
             <button
               onClick={() => setShowExamples(!showExamples)}
-              className="px-4 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 flex items-center space-x-2"
+              className="px-4 py-2 bg-purple-600 dark:bg-purple-700 text-white rounded-md hover:bg-purple-700 dark:hover:bg-purple-600 flex items-center space-x-2 transition-colors"
             >
               <EyeIcon className="h-4 w-4" />
               <span>Examples</span>
@@ -855,16 +866,16 @@ export function JsonInput({ value, onChange, onAnalyze, onReset, isAnalyzing, er
             </button>
             
             {showExamples && (
-              <div className="absolute top-full mt-1 left-0 w-80 bg-white border border-gray-200 rounded-md shadow-lg z-10">
+              <div className="absolute top-full mt-1 left-0 right-0 sm:right-auto sm:w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-md shadow-lg z-10">
                 <div className="p-2 space-y-1 max-h-96 overflow-y-auto">
                   {Object.entries(exampleDocuments).map(([key, example]) => (
                     <button
                       key={key}
                       onClick={() => loadExample(key)}
-                      className="w-full text-left p-3 hover:bg-gray-50 rounded border-b border-gray-100 last:border-b-0"
+                      className="w-full text-left p-3 hover:bg-gray-50 dark:hover:bg-gray-700 rounded border-b border-gray-100 dark:border-gray-700 last:border-b-0 transition-colors"
                     >
-                      <div className="font-medium text-sm text-gray-900">{key}</div>
-                      <div className="text-xs text-gray-600 mt-1">{example.description}</div>
+                      <div className="font-medium text-sm text-gray-900 dark:text-gray-100">{key}</div>
+                      <div className="text-xs text-gray-600 dark:text-gray-400 mt-1">{example.description}</div>
                     </button>
                   ))}
                 </div>
@@ -876,11 +887,11 @@ export function JsonInput({ value, onChange, onAnalyze, onReset, isAnalyzing, er
             onClick={() => {
               if (value.trim()) {
                 navigator.clipboard.writeText(value);
-                alert('JSON copied to clipboard!');
+                addToast(toast.success('Copied!', 'JSON copied to clipboard'));
               }
             }}
             disabled={!value.trim()}
-            className="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 disabled:opacity-50 flex items-center space-x-2"
+            className="px-4 py-2 bg-gray-600 dark:bg-gray-500 text-white rounded-md hover:bg-gray-700 dark:hover:bg-gray-400 disabled:opacity-50 flex items-center space-x-2 transition-colors"
           >
             <DocumentDuplicateIcon className="h-4 w-4" />
             <span>Copy</span>
@@ -888,7 +899,7 @@ export function JsonInput({ value, onChange, onAnalyze, onReset, isAnalyzing, er
 
           <button
             onClick={onReset}
-            className="px-4 py-2 bg-gray-100 text-gray-700 rounded-md hover:bg-gray-200 border border-gray-300 flex items-center space-x-2"
+            className="px-4 py-2 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 rounded-md hover:bg-gray-200 dark:hover:bg-gray-600 border border-gray-300 dark:border-gray-600 flex items-center space-x-2 transition-colors"
           >
             <XMarkIcon className="h-4 w-4" />
             <span>Reset</span>
@@ -896,8 +907,8 @@ export function JsonInput({ value, onChange, onAnalyze, onReset, isAnalyzing, er
         </div>
 
         {/* Helper text */}
-        <div className="text-sm text-gray-600">
-          <p className="font-medium mb-2">The analyzer will evaluate your JSON document for:</p>
+        <div className="text-sm text-gray-600 dark:text-gray-400">
+          <p className="font-medium mb-2 text-gray-900 dark:text-gray-100">The analyzer will evaluate your JSON document for:</p>
           <ul className="list-disc list-inside space-y-1">
             <li>Field types and their OpenSearch mapping complexity</li>
             <li>Document structure and nesting depth</li>
@@ -905,8 +916,8 @@ export function JsonInput({ value, onChange, onAnalyze, onReset, isAnalyzing, er
             <li>Indexing performance implications</li>
           </ul>
           
-          <div className="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-md">
-            <p className="text-blue-800 text-xs">
+          <div className="mt-3 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-md">
+            <p className="text-blue-800 dark:text-blue-300 text-xs">
               <strong>Tips:</strong> Use the Format & Prettify button to clean up your JSON. 
               Try the example documents to see how different data structures affect complexity scores.
             </p>
