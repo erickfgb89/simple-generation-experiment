@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { JsonInput } from './components/JsonInput';
-import { AnalysisResults } from './components/AnalysisResultsSimple';
+import { AnalysisResults } from './components/results';
 import { DarkModeToggle } from './components/DarkModeToggle';
 import { ProgressBar } from './components/LoadingIndicators';
 import { ToastProvider, useToast, toast } from './components/Toast';
